@@ -30,29 +30,36 @@ if generate_button:
 
         user_code = st.text_area("Write your code here (indentation doesn't matter):")
         if st.button("Submit Code"):
+            st.write("Submit button clicked!")  # Debug message
             with st.spinner("Evaluating your code..."):
-                # Generate solution for evaluation
-                solution_response = openai.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": "You are a Python tutor."},
-                        {"role": "user", "content": f"Provide a solution for this exercise: {exercise}"}
-                    ],
-                    max_tokens=150
-                )
-                solution = solution_response.choices[0].message.content.strip()
+                try:
+                    st.write("Generating solution...")  # Debug message
+                    # Generate solution for evaluation
+                    solution_response = openai.ChatCompletion.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": "You are a Python tutor."},
+                            {"role": "user", "content": f"Provide a solution for this exercise: {exercise}"}
+                        ],
+                        max_tokens=150
+                    )
+                    solution = solution_response.choices[0].message['content'].strip()
+                    st.write("Solution generated!")  # Debug message
+        
+                    # Normalize indentation and compare user code with solution
+                    def normalize_code(code):
+                        return "\n".join(line.strip() for line in code.splitlines() if line.strip())
+        
+                    normalized_user_code = normalize_code(user_code)
+                    normalized_solution = normalize_code(solution)
+        
+                    similarity = difflib.SequenceMatcher(None, normalized_user_code, normalized_solution).ratio()
+                    score = round(similarity * 100, 2)
+        
+                    st.write("### Evaluation Result")
+                    st.write(f"Your Score: {score}%")
+                    st.write("### Solution")
+                    st.code(solution, language='python')
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
 
-                # Normalize indentation and compare user code with solution
-                def normalize_code(code):
-                    return "\n".join(line.strip() for line in code.splitlines() if line.strip())
-
-                normalized_user_code = normalize_code(user_code)
-                normalized_solution = normalize_code(solution)
-
-                similarity = difflib.SequenceMatcher(None, normalized_user_code, normalized_solution).ratio()
-                score = round(similarity * 100, 2)
-
-                st.write("### Evaluation Result")
-                st.write(f"Your Score: {score}%")
-                st.write("### Solution")
-                st.code(solution, language='python')
